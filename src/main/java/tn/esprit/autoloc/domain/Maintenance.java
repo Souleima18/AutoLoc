@@ -9,16 +9,16 @@ import lombok.Setter;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "reservation")
+@Table(name = "maintenance")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Reservation {
+public class Maintenance {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idReservation;
+    private Long idMaintenance;
 
     @Column(nullable = false)
     private LocalDate dateDebut;
@@ -26,19 +26,10 @@ public class Reservation {
     @Column(nullable = false)
     private LocalDate dateFin;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private StatutReservation statut;
+    @Column(nullable = false, length = 500)
+    private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_vehicule", nullable = false)
     private Vehicule vehicule;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_client", nullable = false)
-    private Client client;
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_contrat", nullable = false, unique = true)
-    private Contrat contrat;
 }
