@@ -41,14 +41,14 @@ public class Vehicule {
     @Column(nullable = false, length = 20)
     private StatutVehicule statut;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_agence", nullable = false)
     private Agence agence;
 
-    @OneToMany(mappedBy = "vehicule", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "vehicule")
     private Set<Maintenance> maintenances;
 
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    @ManyToMany
     @JoinTable(
             name = "vehicule_equipement",
             joinColumns = @JoinColumn(name = "id_vehicule"),
@@ -56,6 +56,6 @@ public class Vehicule {
     )
     private Set<Equipement> equipements;
 
-    @OneToMany(mappedBy = "vehicule", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "vehicule")
     private Set<Reservation> reservations;
 }

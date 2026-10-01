@@ -39,6 +39,6 @@ public class Client {
     @Column(nullable = false)
     private LocalDate dateInscription;
 
-    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "client")
     private Set<Reservation> reservations;
 }

@@ -32,8 +32,8 @@ public class Agence {
     @Column(nullable = false, length = 20)
     private String telephone;
 
-    @OneToMany(mappedBy = "agence", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "agence")
     private Set<Vehicule> vehicules;
-    @OneToMany(mappedBy = "agence", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "agence")
     private Set<Employe> employes;
 }

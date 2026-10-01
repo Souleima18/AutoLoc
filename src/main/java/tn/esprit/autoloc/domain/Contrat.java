@@ -36,6 +36,6 @@ public class Contrat {
     private Reservation reservation;
 
     // Association 1-N avec Paiement
-    @OneToMany(mappedBy = "contrat", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "contrat")
     private Set<Paiement> paiements;
 }
