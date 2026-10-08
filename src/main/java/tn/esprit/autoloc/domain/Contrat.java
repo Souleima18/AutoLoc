@@ -32,7 +32,7 @@ public class Contrat {
     private Boolean valide;
 
     // Association 1-1 avec Reservation (inverse)
-    @OneToOne(mappedBy = "contrat", fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "contrat")
     private Reservation reservation;
 
     // Association 1-N avec Paiement
