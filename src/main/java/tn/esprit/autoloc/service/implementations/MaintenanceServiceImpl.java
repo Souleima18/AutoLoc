@@ -1,72 +1,75 @@
 package tn.esprit.autoloc.service.implementations;
 
-import lombok.AllArgsConstructor;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.autoloc.domain.Maintenance;
+import tn.esprit.autoloc.exception.ResourceNotFoundException;
 import tn.esprit.autoloc.repository.IMaintenanceRepository;
 import tn.esprit.autoloc.service.interfaces.IMaintenanceService;
 
-import java.util.List;
-import java.util.Optional;
-
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Slf4j
-@Transactional
 public class MaintenanceServiceImpl implements IMaintenanceService {
 
     private final IMaintenanceRepository maintenanceRepository;
 
     @Override
-    public Maintenance createMaintenance(Maintenance maintenance) {
-        log.info("Creating maintenance from {} to {}", maintenance.getDateDebut(), maintenance.getDateFin());
+    public Maintenance create(Maintenance maintenance) {
+        log.info("Création d'une nouvelle maintenance");
+        if (maintenance.getIdMaintenance() != null) {
+            throw new IllegalArgumentException("Une nouvelle maintenance ne doit pas avoir d'identifiant");
+        }
+        if (maintenance.getDateDebut() != null && maintenance.getDateFin() != null) {
+            if (maintenance.getDateFin().isBefore(maintenance.getDateDebut())) {
+                throw new IllegalArgumentException("La date de fin ne peut pas être antérieure à la date de début");
+            }
+        }
         return maintenanceRepository.save(maintenance);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Optional<Maintenance> getMaintenanceById(Long id) {
-        log.info("Fetching maintenance with id: {}", id);
-        return maintenanceRepository.findById(id);
+    public Maintenance findById(Long id) {
+        log.info("Recherche de la maintenance avec l'ID: {}", id);
+        return maintenanceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Maintenance", id));
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Maintenance> getAllMaintenances() {
-        log.info("Fetching all maintenances");
+    public List<Maintenance> findAll() {
+        log.info("Récupération de toutes les maintenances");
         return maintenanceRepository.findAll();
     }
 
     @Override
-    public Maintenance updateMaintenance(Long id, Maintenance maintenance) {
-        log.info("Updating maintenance with id: {}", id);
-        Maintenance existingMaintenance = maintenanceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Maintenance not found with id: " + id));
+    public Maintenance update(Long id, Maintenance maintenance) {
+        log.info("Mise à jour de la maintenance avec l'ID: {}", id);
+        Maintenance existant = findById(id);
 
-        existingMaintenance.setDateDebut(maintenance.getDateDebut());
-        existingMaintenance.setDateFin(maintenance.getDateFin());
-        existingMaintenance.setDescription(maintenance.getDescription());
+        if (maintenance.getDateDebut() != null) {
+            existant.setDateDebut(maintenance.getDateDebut());
+        }
+        if (maintenance.getDateFin() != null) {
+            if (maintenance.getDateFin().isBefore(existant.getDateDebut())) {
+                throw new IllegalArgumentException("La date de fin ne peut pas être antérieure à la date de début");
+            }
+            existant.setDateFin(maintenance.getDateFin());
+        }
+        if (maintenance.getDescription() != null && !maintenance.getDescription().isBlank()) {
+            existant.setDescription(maintenance.getDescription());
+        }
 
-        return maintenanceRepository.save(existingMaintenance);
+        return maintenanceRepository.save(existant);
     }
 
     @Override
-    public void deleteMaintenance(Long id) {
-        log.info("Deleting maintenance with id: {}", id);
+    public void deleteById(Long id) {
+        log.info("Suppression de la maintenance avec l'ID: {}", id);
+        if (!maintenanceRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Maintenance", id);
+        }
         maintenanceRepository.deleteById(id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean maintenanceExists(Long id) {
-        return maintenanceRepository.existsById(id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countMaintenances() {
-        return maintenanceRepository.count();
     }
 }

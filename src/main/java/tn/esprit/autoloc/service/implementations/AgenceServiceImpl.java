@@ -1,73 +1,73 @@
 package tn.esprit.autoloc.service.implementations;
 
-import lombok.AllArgsConstructor;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.autoloc.domain.Agence;
+import tn.esprit.autoloc.exception.ResourceNotFoundException;
 import tn.esprit.autoloc.repository.IAgenceRepository;
 import tn.esprit.autoloc.service.interfaces.IAgenceService;
 
-import java.util.List;
-import java.util.Optional;
-
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Slf4j
-@Transactional
 public class AgenceServiceImpl implements IAgenceService {
 
     private final IAgenceRepository agenceRepository;
 
     @Override
-    public Agence createAgence(Agence agence) {
-        log.info("Creating agence: {}", agence.getNom());
+    public Agence create(Agence agence) {
+        log.info("Création d'une nouvelle agence");
+        if (agence.getIdAgence() != null) {
+            throw new IllegalArgumentException("Une nouvelle agence ne doit pas avoir d'identifiant");
+        }
+        if (agence.getNom() == null || agence.getNom().isBlank()) {
+            throw new IllegalArgumentException("Le nom de l'agence est obligatoire");
+        }
         return agenceRepository.save(agence);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Optional<Agence> getAgenceById(Long id) {
-        log.info("Fetching agence with id: {}", id);
-        return agenceRepository.findById(id);
+    public Agence findById(Long id) {
+        log.info("Recherche de l'agence avec l'ID: {}", id);
+        return agenceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Agence", id));
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Agence> getAllAgences() {
-        log.info("Fetching all agences");
+    public List<Agence> findAll() {
+        log.info("Récupération de toutes les agences");
         return agenceRepository.findAll();
     }
 
     @Override
-    public Agence updateAgence(Long id, Agence agence) {
-        log.info("Updating agence with id: {}", id);
-        Agence existingAgence = agenceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Agence not found with id: " + id));
+    public Agence update(Long id, Agence agence) {
+        log.info("Mise à jour de l'agence avec l'ID: {}", id);
+        Agence existant = findById(id);
 
-        existingAgence.setNom(agence.getNom());
-        existingAgence.setVille(agence.getVille());
-        existingAgence.setAdresse(agence.getAdresse());
-        existingAgence.setTelephone(agence.getTelephone());
+        if (agence.getNom() != null && !agence.getNom().isBlank()) {
+            existant.setNom(agence.getNom());
+        }
+        if (agence.getAdresse() != null && !agence.getAdresse().isBlank()) {
+            existant.setAdresse(agence.getAdresse());
+        }
+        if (agence.getTelephone() != null && !agence.getTelephone().isBlank()) {
+            existant.setTelephone(agence.getTelephone());
+        }
+        if (agence.getVille() != null && !agence.getVille().isBlank()) {
+            existant.setVille(agence.getVille());
+        }
 
-        return agenceRepository.save(existingAgence);
+        return agenceRepository.save(existant);
     }
 
     @Override
-    public void deleteAgence(Long id) {
-        log.info("Deleting agence with id: {}", id);
+    public void deleteById(Long id) {
+        log.info("Suppression de l'agence avec l'ID: {}", id);
+        if (!agenceRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Agence", id);
+        }
         agenceRepository.deleteById(id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean agenceExists(Long id) {
-        return agenceRepository.existsById(id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countAgences() {
-        return agenceRepository.count();
     }
 }

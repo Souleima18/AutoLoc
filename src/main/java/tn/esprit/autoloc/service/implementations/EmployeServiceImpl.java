@@ -1,72 +1,76 @@
 package tn.esprit.autoloc.service.implementations;
 
-import lombok.AllArgsConstructor;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.autoloc.domain.Employe;
+import tn.esprit.autoloc.exception.ResourceNotFoundException;
 import tn.esprit.autoloc.repository.IEmployeRepository;
 import tn.esprit.autoloc.service.interfaces.IEmployeService;
 
-import java.util.List;
-import java.util.Optional;
-
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Slf4j
-@Transactional
 public class EmployeServiceImpl implements IEmployeService {
 
     private final IEmployeRepository employeRepository;
 
     @Override
-    public Employe createEmploye(Employe employe) {
-        log.info("Creating employe: {} {}", employe.getNom(), employe.getPrenom());
+    public Employe create(Employe employe) {
+        log.info("Création d'un nouveau employé");
+        if (employe.getIdEmploye() != null) {
+            throw new IllegalArgumentException("Un nouveau employé ne doit pas avoir d'identifiant");
+        }
+        if (employe.getNom() == null || employe.getNom().isBlank()) {
+            throw new IllegalArgumentException("Le nom de l'employé est obligatoire");
+        }
+        if (employe.getPrenom() == null || employe.getPrenom().isBlank()) {
+            throw new IllegalArgumentException("Le prénom de l'employé est obligatoire");
+        }
+        if (employe.getRole() == null) {
+            throw new IllegalArgumentException("Le rôle de l'employé est obligatoire");
+        }
         return employeRepository.save(employe);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Optional<Employe> getEmployeById(Long id) {
-        log.info("Fetching employe with id: {}", id);
-        return employeRepository.findById(id);
+    public Employe findById(Long id) {
+        log.info("Recherche de l'employé avec l'ID: {}", id);
+        return employeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employe", id));
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Employe> getAllEmployes() {
-        log.info("Fetching all employes");
+    public List<Employe> findAll() {
+        log.info("Récupération de tous les employés");
         return employeRepository.findAll();
     }
 
     @Override
-    public Employe updateEmploye(Long id, Employe employe) {
-        log.info("Updating employe with id: {}", id);
-        Employe existingEmploye = employeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Employe not found with id: " + id));
+    public Employe update(Long id, Employe employe) {
+        log.info("Mise à jour de l'employé avec l'ID: {}", id);
+        Employe existant = findById(id);
 
-        existingEmploye.setNom(employe.getNom());
-        existingEmploye.setPrenom(employe.getPrenom());
-        existingEmploye.setRole(employe.getRole());
+        if (employe.getNom() != null && !employe.getNom().isBlank()) {
+            existant.setNom(employe.getNom());
+        }
+        if (employe.getPrenom() != null && !employe.getPrenom().isBlank()) {
+            existant.setPrenom(employe.getPrenom());
+        }
+        if (employe.getRole() != null) {
+            existant.setRole(employe.getRole());
+        }
 
-        return employeRepository.save(existingEmploye);
+        return employeRepository.save(existant);
     }
 
     @Override
-    public void deleteEmploye(Long id) {
-        log.info("Deleting employe with id: {}", id);
+    public void deleteById(Long id) {
+        log.info("Suppression de l'employé avec l'ID: {}", id);
+        if (!employeRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Employe", id);
+        }
         employeRepository.deleteById(id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean employeExists(Long id) {
-        return employeRepository.existsById(id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countEmployes() {
-        return employeRepository.count();
     }
 }

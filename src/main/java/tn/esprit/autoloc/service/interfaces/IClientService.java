@@ -1,24 +1,12 @@
 package tn.esprit.autoloc.service.interfaces;
 
-import tn.esprit.autoloc.domain.Client;
 import java.util.List;
-import java.util.Optional;
+import tn.esprit.autoloc.domain.Client;
 
 public interface IClientService {
-
-    // CREATE
-    Client createClient(Client client);
-
-    // READ
-    Optional<Client> getClientById(Long id);
-    List<Client> getAllClients();
-    Client getClientByEmail(String email);
-
-    // UPDATE
-    Client updateClient(Long id, Client client);
-
-    // DELETE
-    void deleteClient(Long id);
-    boolean clientExists(Long id);
-    long countClients();
+    Client create(Client client);
+    Client findById(Long id);
+    List<Client> findAll();
+    Client update(Long id, Client client);
+    void deleteById(Long id);
 }
