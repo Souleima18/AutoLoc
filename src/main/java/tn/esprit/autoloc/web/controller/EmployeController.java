@@ -1,15 +1,14 @@
 package tn.esprit.autoloc.web.controller;
 
+import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.autoloc.domain.Employe;
-import tn.esprit.autoloc.exception.ResourceNotFoundException;
 import tn.esprit.autoloc.service.interfaces.IEmployeService;
-
-import java.util.List;
+import tn.esprit.autoloc.web.dto.EmployeDto;
 
 @RestController
 @RequestMapping("/api/employes")
@@ -20,36 +19,28 @@ public class EmployeController {
     private final IEmployeService employeService;
 
     @PostMapping
-    public ResponseEntity<Employe> createEmploye(@RequestBody Employe employe) {
-        log.info("Creating employe with name: {}", employe.getNom());
-        Employe created = employeService.create(employe);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    public ResponseEntity<EmployeDto.Response> createEmploye(@Valid @RequestBody EmployeDto.Request request) {
+        log.info("Creating employe with name: {}", request.nom());
+        return ResponseEntity.status(HttpStatus.CREATED).body(employeService.create(request));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Employe> getEmployeById(@PathVariable Long id) {
+    public ResponseEntity<EmployeDto.Response> getEmployeById(@PathVariable Long id) {
         log.info("Fetching employe with id: {}", id);
-        try {
-            Employe employe = employeService.findById(id);
-            return ResponseEntity.ok(employe);
-        } catch (ResourceNotFoundException e) {
-            log.warn("Employe not found with id: {}", id);
-            throw e;
-        }
+        return ResponseEntity.ok(employeService.findById(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<Employe>> getAllEmployes() {
+    public ResponseEntity<List<EmployeDto.Response>> getAllEmployes() {
         log.info("Fetching all employes");
-        List<Employe> employes = employeService.findAll();
-        return ResponseEntity.ok(employes);
+        return ResponseEntity.ok(employeService.findAll());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Employe> updateEmploye(@PathVariable Long id, @RequestBody Employe employe) {
+    public ResponseEntity<EmployeDto.Response> updateEmploye(
+            @PathVariable Long id, @Valid @RequestBody EmployeDto.Request request) {
         log.info("Updating employe with id: {}", id);
-        Employe updated = employeService.update(id, employe);
-        return ResponseEntity.ok(updated);
+        return ResponseEntity.ok(employeService.update(id, request));
     }
 
     @DeleteMapping("/{id}")

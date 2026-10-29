@@ -1,15 +1,14 @@
 package tn.esprit.autoloc.web.controller;
 
+import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.autoloc.domain.Client;
-import tn.esprit.autoloc.exception.ResourceNotFoundException;
 import tn.esprit.autoloc.service.interfaces.IClientService;
-
-import java.util.List;
+import tn.esprit.autoloc.web.dto.ClientDto;
 
 @RestController
 @RequestMapping("/api/clients")
@@ -20,36 +19,28 @@ public class ClientController {
     private final IClientService clientService;
 
     @PostMapping
-    public ResponseEntity<Client> createClient(@RequestBody Client client) {
-        log.info("Creating client with email: {}", client.getEmail());
-        Client created = clientService.create(client);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    public ResponseEntity<ClientDto.Response> createClient(@Valid @RequestBody ClientDto.Request request) {
+        log.info("Creating client with email: {}", request.email());
+        return ResponseEntity.status(HttpStatus.CREATED).body(clientService.create(request));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Client> getClientById(@PathVariable Long id) {
+    public ResponseEntity<ClientDto.Response> getClientById(@PathVariable Long id) {
         log.info("Fetching client with id: {}", id);
-        try {
-            Client client = clientService.findById(id);
-            return ResponseEntity.ok(client);
-        } catch (ResourceNotFoundException e) {
-            log.warn("Client not found with id: {}", id);
-            throw e;
-        }
+        return ResponseEntity.ok(clientService.findById(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<Client>> getAllClients() {
+    public ResponseEntity<List<ClientDto.Response>> getAllClients() {
         log.info("Fetching all clients");
-        List<Client> clients = clientService.findAll();
-        return ResponseEntity.ok(clients);
+        return ResponseEntity.ok(clientService.findAll());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Client> updateClient(@PathVariable Long id, @RequestBody Client client) {
+    public ResponseEntity<ClientDto.Response> updateClient(
+            @PathVariable Long id, @Valid @RequestBody ClientDto.Request request) {
         log.info("Updating client with id: {}", id);
-        Client updated = clientService.update(id, client);
-        return ResponseEntity.ok(updated);
+        return ResponseEntity.ok(clientService.update(id, request));
     }
 
     @DeleteMapping("/{id}")

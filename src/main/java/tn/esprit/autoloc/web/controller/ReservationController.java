@@ -1,15 +1,14 @@
 package tn.esprit.autoloc.web.controller;
 
+import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.autoloc.domain.Reservation;
-import tn.esprit.autoloc.exception.ResourceNotFoundException;
 import tn.esprit.autoloc.service.interfaces.IReservationService;
-
-import java.util.List;
+import tn.esprit.autoloc.web.dto.ReservationDto;
 
 @RestController
 @RequestMapping("/api/reservations")
@@ -20,36 +19,29 @@ public class ReservationController {
     private final IReservationService reservationService;
 
     @PostMapping
-    public ResponseEntity<Reservation> createReservation(@RequestBody Reservation reservation) {
+    public ResponseEntity<ReservationDto.Response> createReservation(
+            @Valid @RequestBody ReservationDto.Request request) {
         log.info("Creating reservation");
-        Reservation created = reservationService.create(reservation);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(reservationService.create(request));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Reservation> getReservationById(@PathVariable Long id) {
+    public ResponseEntity<ReservationDto.Response> getReservationById(@PathVariable Long id) {
         log.info("Fetching reservation with id: {}", id);
-        try {
-            Reservation reservation = reservationService.findById(id);
-            return ResponseEntity.ok(reservation);
-        } catch (ResourceNotFoundException e) {
-            log.warn("Reservation not found with id: {}", id);
-            throw e;
-        }
+        return ResponseEntity.ok(reservationService.findById(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<Reservation>> getAllReservations() {
+    public ResponseEntity<List<ReservationDto.Response>> getAllReservations() {
         log.info("Fetching all reservations");
-        List<Reservation> reservations = reservationService.findAll();
-        return ResponseEntity.ok(reservations);
+        return ResponseEntity.ok(reservationService.findAll());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Reservation> updateReservation(@PathVariable Long id, @RequestBody Reservation reservation) {
+    public ResponseEntity<ReservationDto.Response> updateReservation(
+            @PathVariable Long id, @Valid @RequestBody ReservationDto.Request request) {
         log.info("Updating reservation with id: {}", id);
-        Reservation updated = reservationService.update(id, reservation);
-        return ResponseEntity.ok(updated);
+        return ResponseEntity.ok(reservationService.update(id, request));
     }
 
     @DeleteMapping("/{id}")

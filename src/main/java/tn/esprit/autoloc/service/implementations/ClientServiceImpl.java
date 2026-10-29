@@ -8,6 +8,8 @@ import tn.esprit.autoloc.domain.Client;
 import tn.esprit.autoloc.exception.ResourceNotFoundException;
 import tn.esprit.autoloc.repository.IClientRepository;
 import tn.esprit.autoloc.service.interfaces.IClientService;
+import tn.esprit.autoloc.web.dto.ClientDto;
+import tn.esprit.autoloc.web.mapper.ClientMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -15,54 +17,32 @@ import tn.esprit.autoloc.service.interfaces.IClientService;
 public class ClientServiceImpl implements IClientService {
 
     private final IClientRepository clientRepository;
+    private final ClientMapper clientMapper;
 
     @Override
-    public Client create(Client client) {
+    public ClientDto.Response create(ClientDto.Request request) {
         log.info("Création d'un nouveau client");
-        if (client.getIdClient() != null) {
-            throw new IllegalArgumentException("Un nouveau client ne doit pas avoir d'identifiant");
-        }
-        if (client.getNom() == null || client.getNom().isBlank()) {
-            throw new IllegalArgumentException("Le nom du client est obligatoire");
-        }
-        if (client.getEmail() == null || client.getEmail().isBlank()) {
-            throw new IllegalArgumentException("L'email du client est obligatoire");
-        }
-        return clientRepository.save(client);
+        return clientMapper.toResponse(clientRepository.save(clientMapper.toEntity(request)));
     }
 
     @Override
-    public Client findById(Long id) {
+    public ClientDto.Response findById(Long id) {
         log.info("Recherche du client avec l'ID: {}", id);
-        return clientRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Client", id));
+        return clientMapper.toResponse(getEntityById(id));
     }
 
     @Override
-    public List<Client> findAll() {
+    public List<ClientDto.Response> findAll() {
         log.info("Récupération de tous les clients");
-        return clientRepository.findAll();
+        return clientRepository.findAll().stream().map(clientMapper::toResponse).toList();
     }
 
     @Override
-    public Client update(Long id, Client client) {
+    public ClientDto.Response update(Long id, ClientDto.Request request) {
         log.info("Mise à jour du client avec l'ID: {}", id);
-        Client existant = findById(id);
-
-        if (client.getNom() != null && !client.getNom().isBlank()) {
-            existant.setNom(client.getNom());
-        }
-        if (client.getPrenom() != null && !client.getPrenom().isBlank()) {
-            existant.setPrenom(client.getPrenom());
-        }
-        if (client.getEmail() != null && !client.getEmail().isBlank()) {
-            existant.setEmail(client.getEmail());
-        }
-        if (client.getTelephone() != null && !client.getTelephone().isBlank()) {
-            existant.setTelephone(client.getTelephone());
-        }
-
-        return clientRepository.save(existant);
+        Client client = getEntityById(id);
+        clientMapper.updateEntity(request, client);
+        return clientMapper.toResponse(clientRepository.save(client));
     }
 
     @Override
@@ -72,5 +52,10 @@ public class ClientServiceImpl implements IClientService {
             throw new ResourceNotFoundException("Client", id);
         }
         clientRepository.deleteById(id);
+    }
+
+    private Client getEntityById(Long id) {
+        return clientRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Client", id));
     }
 }

@@ -1,15 +1,14 @@
 package tn.esprit.autoloc.web.controller;
 
+import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.autoloc.domain.Contrat;
-import tn.esprit.autoloc.exception.ResourceNotFoundException;
 import tn.esprit.autoloc.service.interfaces.IContratService;
-
-import java.util.List;
+import tn.esprit.autoloc.web.dto.ContratDto;
 
 @RestController
 @RequestMapping("/api/contrats")
@@ -20,36 +19,28 @@ public class ContratController {
     private final IContratService contratService;
 
     @PostMapping
-    public ResponseEntity<Contrat> createContrat(@RequestBody Contrat contrat) {
+    public ResponseEntity<ContratDto.Response> createContrat(@Valid @RequestBody ContratDto.Request request) {
         log.info("Creating contrat");
-        Contrat created = contratService.create(contrat);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(contratService.create(request));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Contrat> getContratById(@PathVariable Long id) {
+    public ResponseEntity<ContratDto.Response> getContratById(@PathVariable Long id) {
         log.info("Fetching contrat with id: {}", id);
-        try {
-            Contrat contrat = contratService.findById(id);
-            return ResponseEntity.ok(contrat);
-        } catch (ResourceNotFoundException e) {
-            log.warn("Contrat not found with id: {}", id);
-            throw e;
-        }
+        return ResponseEntity.ok(contratService.findById(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<Contrat>> getAllContrats() {
+    public ResponseEntity<List<ContratDto.Response>> getAllContrats() {
         log.info("Fetching all contrats");
-        List<Contrat> contrats = contratService.findAll();
-        return ResponseEntity.ok(contrats);
+        return ResponseEntity.ok(contratService.findAll());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Contrat> updateContrat(@PathVariable Long id, @RequestBody Contrat contrat) {
+    public ResponseEntity<ContratDto.Response> updateContrat(
+            @PathVariable Long id, @Valid @RequestBody ContratDto.Request request) {
         log.info("Updating contrat with id: {}", id);
-        Contrat updated = contratService.update(id, contrat);
-        return ResponseEntity.ok(updated);
+        return ResponseEntity.ok(contratService.update(id, request));
     }
 
     @DeleteMapping("/{id}")

@@ -8,6 +8,8 @@ import tn.esprit.autoloc.domain.Contrat;
 import tn.esprit.autoloc.exception.ResourceNotFoundException;
 import tn.esprit.autoloc.repository.IContratRepository;
 import tn.esprit.autoloc.service.interfaces.IContratService;
+import tn.esprit.autoloc.web.dto.ContratDto;
+import tn.esprit.autoloc.web.mapper.ContratMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -15,48 +17,32 @@ import tn.esprit.autoloc.service.interfaces.IContratService;
 public class ContratServiceImpl implements IContratService {
 
     private final IContratRepository contratRepository;
+    private final ContratMapper contratMapper;
 
     @Override
-    public Contrat create(Contrat contrat) {
+    public ContratDto.Response create(ContratDto.Request request) {
         log.info("Création d'un nouveau contrat");
-        if (contrat.getIdContrat() != null) {
-            throw new IllegalArgumentException("Un nouveau contrat ne doit pas avoir d'identifiant");
-        }
-        if (contrat.getMontantTotal() != null && contrat.getMontantTotal().doubleValue() < 0) {
-            throw new IllegalArgumentException("Le montant total ne peut pas être négatif");
-        }
-        return contratRepository.save(contrat);
+        return contratMapper.toResponse(contratRepository.save(contratMapper.toEntity(request)));
     }
 
     @Override
-    public Contrat findById(Long id) {
+    public ContratDto.Response findById(Long id) {
         log.info("Recherche du contrat avec l'ID: {}", id);
-        return contratRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Contrat", id));
+        return contratMapper.toResponse(getEntityById(id));
     }
 
     @Override
-    public List<Contrat> findAll() {
+    public List<ContratDto.Response> findAll() {
         log.info("Récupération de tous les contrats");
-        return contratRepository.findAll();
+        return contratRepository.findAll().stream().map(contratMapper::toResponse).toList();
     }
 
     @Override
-    public Contrat update(Long id, Contrat contrat) {
+    public ContratDto.Response update(Long id, ContratDto.Request request) {
         log.info("Mise à jour du contrat avec l'ID: {}", id);
-        Contrat existant = findById(id);
-
-        if (contrat.getMontantTotal() != null) {
-            if (contrat.getMontantTotal().doubleValue() < 0) {
-                throw new IllegalArgumentException("Le montant total ne peut pas être négatif");
-            }
-            existant.setMontantTotal(contrat.getMontantTotal());
-        }
-        if (contrat.getValide() != null) {
-            existant.setValide(contrat.getValide());
-        }
-
-        return contratRepository.save(existant);
+        Contrat contrat = getEntityById(id);
+        contratMapper.updateEntity(request, contrat);
+        return contratMapper.toResponse(contratRepository.save(contrat));
     }
 
     @Override
@@ -66,5 +52,10 @@ public class ContratServiceImpl implements IContratService {
             throw new ResourceNotFoundException("Contrat", id);
         }
         contratRepository.deleteById(id);
+    }
+
+    private Contrat getEntityById(Long id) {
+        return contratRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Contrat", id));
     }
 }

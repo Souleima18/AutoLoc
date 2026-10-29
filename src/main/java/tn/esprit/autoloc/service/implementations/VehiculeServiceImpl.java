@@ -4,10 +4,14 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import tn.esprit.autoloc.domain.Agence;
 import tn.esprit.autoloc.domain.Vehicule;
 import tn.esprit.autoloc.exception.ResourceNotFoundException;
+import tn.esprit.autoloc.repository.IAgenceRepository;
 import tn.esprit.autoloc.repository.IVehiculeRepository;
 import tn.esprit.autoloc.service.interfaces.IVehiculeService;
+import tn.esprit.autoloc.web.dto.VehiculeDto;
+import tn.esprit.autoloc.web.mapper.VehiculeMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -15,54 +19,36 @@ import tn.esprit.autoloc.service.interfaces.IVehiculeService;
 public class VehiculeServiceImpl implements IVehiculeService {
 
     private final IVehiculeRepository vehiculeRepository;
+    private final IAgenceRepository agenceRepository;
+    private final VehiculeMapper vehiculeMapper;
 
     @Override
-    public Vehicule create(Vehicule vehicule) {
+    public VehiculeDto.Response create(VehiculeDto.Request request) {
         log.info("Création d'un nouveau véhicule");
-        if (vehicule.getIdVehicule() != null) {
-            throw new IllegalArgumentException("Un nouveau véhicule ne doit pas avoir d'identifiant");
-        }
-        if (vehicule.getTarifJournalier() != null && vehicule.getTarifJournalier().doubleValue() < 0) {
-            throw new IllegalArgumentException("Le tarif journalier ne peut pas être négatif");
-        }
-        return vehiculeRepository.save(vehicule);
+        Vehicule vehicule = vehiculeMapper.toEntity(request);
+        vehicule.setAgence(getAgence(request.agenceId()));
+        return vehiculeMapper.toResponse(vehiculeRepository.save(vehicule));
     }
 
     @Override
-    public Vehicule findById(Long id) {
+    public VehiculeDto.Response findById(Long id) {
         log.info("Recherche du véhicule avec l'ID: {}", id);
-        return vehiculeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Vehicule", id));
+        return vehiculeMapper.toResponse(getEntityById(id));
     }
 
     @Override
-    public List<Vehicule> findAll() {
+    public List<VehiculeDto.Response> findAll() {
         log.info("Récupération de tous les véhicules");
-        return vehiculeRepository.findAll();
+        return vehiculeRepository.findAll().stream().map(vehiculeMapper::toResponse).toList();
     }
 
     @Override
-    public Vehicule update(Long id, Vehicule vehicule) {
+    public VehiculeDto.Response update(Long id, VehiculeDto.Request request) {
         log.info("Mise à jour du véhicule avec l'ID: {}", id);
-        Vehicule existant = findById(id);
-
-        if (vehicule.getTarifJournalier() != null) {
-            if (vehicule.getTarifJournalier().doubleValue() < 0) {
-                throw new IllegalArgumentException("Le tarif journalier ne peut pas être négatif");
-            }
-            existant.setTarifJournalier(vehicule.getTarifJournalier());
-        }
-        if (vehicule.getStatut() != null) {
-            existant.setStatut(vehicule.getStatut());
-        }
-        if (vehicule.getMarque() != null && !vehicule.getMarque().isBlank()) {
-            existant.setMarque(vehicule.getMarque());
-        }
-        if (vehicule.getModele() != null && !vehicule.getModele().isBlank()) {
-            existant.setModele(vehicule.getModele());
-        }
-
-        return vehiculeRepository.save(existant);
+        Vehicule vehicule = getEntityById(id);
+        vehiculeMapper.updateEntity(request, vehicule);
+        vehicule.setAgence(getAgence(request.agenceId()));
+        return vehiculeMapper.toResponse(vehiculeRepository.save(vehicule));
     }
 
     @Override
@@ -72,5 +58,15 @@ public class VehiculeServiceImpl implements IVehiculeService {
             throw new ResourceNotFoundException("Vehicule", id);
         }
         vehiculeRepository.deleteById(id);
+    }
+
+    private Vehicule getEntityById(Long id) {
+        return vehiculeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicule", id));
+    }
+
+    private Agence getAgence(Long id) {
+        return agenceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Agence", id));
     }
 }
