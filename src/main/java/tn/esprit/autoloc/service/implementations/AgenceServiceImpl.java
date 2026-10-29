@@ -3,10 +3,14 @@ package tn.esprit.autoloc.service.implementations;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import tn.esprit.autoloc.domain.Agence;
 import tn.esprit.autoloc.exception.ResourceNotFoundException;
 import tn.esprit.autoloc.repository.IAgenceRepository;
+import tn.esprit.autoloc.repository.IEmployeRepository;
+import tn.esprit.autoloc.repository.IVehiculeRepository;
 import tn.esprit.autoloc.service.interfaces.IAgenceService;
 
 @Service
@@ -15,6 +19,8 @@ import tn.esprit.autoloc.service.interfaces.IAgenceService;
 public class AgenceServiceImpl implements IAgenceService {
 
     private final IAgenceRepository agenceRepository;
+    private final IVehiculeRepository vehiculeRepository;
+    private final IEmployeRepository employeRepository;
 
     @Override
     public Agence create(Agence agence) {
@@ -67,6 +73,13 @@ public class AgenceServiceImpl implements IAgenceService {
         log.info("Suppression de l'agence avec l'ID: {}", id);
         if (!agenceRepository.existsById(id)) {
             throw new ResourceNotFoundException("Agence", id);
+        }
+        if (vehiculeRepository.existsByAgence_IdAgence(id)
+                || employeRepository.existsByAgence_IdAgence(id)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Impossible de supprimer cette agence : elle est encore associée à des véhicules ou des employés."
+            );
         }
         agenceRepository.deleteById(id);
     }
