@@ -16,7 +16,7 @@ public final class ReservationDto {
             @NotNull StatutReservation statut,
             @NotNull @Positive Long vehiculeId,
             @NotNull @Positive Long clientId,
-            @NotNull @Positive Long contratId) {
+            @Positive Long contratId) {
     }
 
     public record Response(

@@ -2,6 +2,7 @@ package tn.esprit.autoloc.web.controller;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.autoloc.service.interfaces.IContratService;
 import tn.esprit.autoloc.web.dto.ContratDto;
+import tn.esprit.autoloc.web.dto.affectation.ContratDTO;
 
 @RestController
 @RequestMapping("/api/contrats")
@@ -48,5 +50,14 @@ public class ContratController {
         log.info("Deleting contrat with id: {}", id);
         contratService.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/affecter-reservation")
+    public ResponseEntity<ContratDTO> affecterContratAReservation(
+            @RequestParam LocalDate dateSignature,
+            @RequestParam LocalDate dateDebut,
+            @RequestParam LocalDate dateFin) {
+        return ResponseEntity.ok(
+                contratService.affecterContratAReservation(dateSignature, dateDebut, dateFin));
     }
 }

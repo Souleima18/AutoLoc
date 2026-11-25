@@ -39,6 +39,6 @@ public class Reservation {
     private Client client;
 
     @OneToOne
-    @JoinColumn(name = "id_contrat", nullable = false, unique = true)
+    @JoinColumn(name = "id_contrat", unique = true)
     private Contrat contrat;
 }

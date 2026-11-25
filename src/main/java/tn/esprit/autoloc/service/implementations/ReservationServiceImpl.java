@@ -5,17 +5,24 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.autoloc.domain.Client;
 import tn.esprit.autoloc.domain.Contrat;
 import tn.esprit.autoloc.domain.Reservation;
+import tn.esprit.autoloc.domain.StatutReservation;
 import tn.esprit.autoloc.domain.Vehicule;
+import tn.esprit.autoloc.exception.ResourceConflictException;
 import tn.esprit.autoloc.exception.ResourceNotFoundException;
 import tn.esprit.autoloc.repository.IClientRepository;
 import tn.esprit.autoloc.repository.IContratRepository;
 import tn.esprit.autoloc.repository.IReservationRepository;
 import tn.esprit.autoloc.repository.IVehiculeRepository;
 import tn.esprit.autoloc.service.interfaces.IReservationService;
+import tn.esprit.autoloc.web.dto.ContratDto;
 import tn.esprit.autoloc.web.dto.ReservationDto;
+import tn.esprit.autoloc.web.dto.ReservationResponseDTO;
+import tn.esprit.autoloc.web.dto.ReservationWithContratRequestDTO;
+import tn.esprit.autoloc.web.mapper.ContratMapper;
 import tn.esprit.autoloc.web.mapper.ReservationMapper;
 
 @Service
@@ -28,6 +35,7 @@ public class ReservationServiceImpl implements IReservationService {
     private final IClientRepository clientRepository;
     private final IContratRepository contratRepository;
     private final ReservationMapper reservationMapper;
+    private final ContratMapper contratMapper;
 
     @Override
     public ReservationDto.Response create(ReservationDto.Request request) {
@@ -69,6 +77,47 @@ public class ReservationServiceImpl implements IReservationService {
         reservationRepository.deleteById(id);
     }
 
+    @Override
+    @Transactional
+    public ReservationResponseDTO affecterReservationAClient(Long idReservation, String nom, String prenom) {
+        Reservation reservation = getEntityById(idReservation);
+        List<Client> clients = clientRepository.findByNomIgnoreCaseAndPrenomIgnoreCase(nom, prenom);
+        if (clients.isEmpty()) {
+            throw new ResourceNotFoundException("Aucun client trouvé avec le nom et prénom fournis.");
+        }
+        if (clients.size() > 1) {
+            throw new ResourceConflictException("Plusieurs clients correspondent à ce nom et prénom.");
+        }
+
+        reservation.setClient(clients.get(0));
+        return toResponse(reservationRepository.save(reservation));
+    }
+
+    @Override
+    @Transactional
+    public ReservationResponseDTO creerReservationEtContratAssocie(ReservationWithContratRequestDTO requestDTO) {
+        validateDates(requestDTO.dateDebut(), requestDTO.dateFin());
+
+        Vehicule vehicule = getVehicule(requestDTO.idVehicule());
+        Client client = getClient(requestDTO.idClient());
+
+        Contrat contrat = contratMapper.toEntity(new ContratDto.Request(
+                requestDTO.dateSignature(),
+                requestDTO.montantTotal(),
+                false));
+        contrat = contratRepository.save(contrat);
+
+        Reservation reservation = new Reservation();
+        reservation.setDateDebut(requestDTO.dateDebut());
+        reservation.setDateFin(requestDTO.dateFin());
+        reservation.setStatut(requestDTO.statut());
+        reservation.setVehicule(vehicule);
+        reservation.setClient(client);
+        reservation.setContrat(contrat);
+
+        return toResponse(reservationRepository.save(reservation));
+    }
+
     private Reservation getEntityById(Long id) {
         return reservationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation", id));
@@ -77,7 +126,9 @@ public class ReservationServiceImpl implements IReservationService {
     private void setRelations(Reservation reservation, ReservationDto.Request request) {
         reservation.setVehicule(getVehicule(request.vehiculeId()));
         reservation.setClient(getClient(request.clientId()));
-        reservation.setContrat(getContrat(request.contratId()));
+        if (request.contratId() != null) {
+            reservation.setContrat(getContrat(request.contratId()));
+        }
     }
 
     private Vehicule getVehicule(Long id) {
@@ -99,5 +150,17 @@ public class ReservationServiceImpl implements IReservationService {
         if (end.isBefore(start)) {
             throw new IllegalArgumentException("La date de fin ne peut pas être antérieure à la date de début");
         }
+    }
+
+    private ReservationResponseDTO toResponse(Reservation reservation) {
+        ReservationDto.Response response = reservationMapper.toResponse(reservation);
+        return new ReservationResponseDTO(
+                response.idReservation(),
+                response.dateDebut(),
+                response.dateFin(),
+                response.statut(),
+                response.vehiculeId(),
+                response.clientId(),
+                response.contratId());
     }
 }

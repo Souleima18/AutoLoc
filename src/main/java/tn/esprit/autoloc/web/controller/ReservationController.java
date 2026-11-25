@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.autoloc.service.interfaces.IReservationService;
 import tn.esprit.autoloc.web.dto.ReservationDto;
+import tn.esprit.autoloc.web.dto.ReservationResponseDTO;
+import tn.esprit.autoloc.web.dto.ReservationWithContratRequestDTO;
 
 @RestController
 @RequestMapping("/api/reservations")
@@ -49,5 +51,20 @@ public class ReservationController {
         log.info("Deleting reservation with id: {}", id);
         reservationService.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/client")
+    public ResponseEntity<ReservationResponseDTO> affecterReservationAClient(
+            @PathVariable Long id,
+            @RequestParam String nom,
+            @RequestParam String prenom) {
+        return ResponseEntity.ok(reservationService.affecterReservationAClient(id, nom, prenom));
+    }
+
+    @PostMapping("/avec-contrat")
+    public ResponseEntity<ReservationResponseDTO> creerReservationEtContratAssocie(
+            @Valid @RequestBody ReservationWithContratRequestDTO requestDTO) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(reservationService.creerReservationEtContratAssocie(requestDTO));
     }
 }

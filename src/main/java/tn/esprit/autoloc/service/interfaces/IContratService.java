@@ -1,7 +1,9 @@
 package tn.esprit.autoloc.service.interfaces;
 
 import java.util.List;
+import java.time.LocalDate;
 import tn.esprit.autoloc.web.dto.ContratDto;
+import tn.esprit.autoloc.web.dto.affectation.ContratDTO;
 
 public interface IContratService {
     ContratDto.Response create(ContratDto.Request contrat);
@@ -9,4 +11,5 @@ public interface IContratService {
     List<ContratDto.Response> findAll();
     ContratDto.Response update(Long id, ContratDto.Request contrat);
     void deleteById(Long id);
+    ContratDTO affecterContratAReservation(LocalDate dateSignature, LocalDate dateDebut, LocalDate dateFin);
 }

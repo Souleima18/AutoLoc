@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.autoloc.service.interfaces.IVehiculeService;
 import tn.esprit.autoloc.web.dto.VehiculeDto;
+import tn.esprit.autoloc.web.dto.affectation.VehiculeDTO;
 
 @RestController
 @RequestMapping("/api/vehicules")
@@ -48,5 +49,19 @@ public class VehiculeController {
         log.info("Deleting vehicule with id: {}", id);
         vehiculeService.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/equipements/{idEquipement}")
+    public ResponseEntity<VehiculeDTO> affecterVehiculeAEquipement(
+            @PathVariable Long id,
+            @PathVariable Long idEquipement) {
+        return ResponseEntity.ok(vehiculeService.affecterVehiculeAEquipement(id, idEquipement));
+    }
+
+    @PostMapping("/affecter-maintenance")
+    public ResponseEntity<VehiculeDTO> affecterMaintenanceAvehicule(
+            @RequestParam String description,
+            @RequestParam String immatriculation) {
+        return ResponseEntity.ok(vehiculeService.affecterMaintenanceAvehicule(description, immatriculation));
     }
 }

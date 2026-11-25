@@ -1,15 +1,23 @@
 package tn.esprit.autoloc.service.implementations;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.autoloc.domain.Contrat;
+import tn.esprit.autoloc.domain.Reservation;
+import tn.esprit.autoloc.exception.ResourceConflictException;
 import tn.esprit.autoloc.exception.ResourceNotFoundException;
 import tn.esprit.autoloc.repository.IContratRepository;
+import tn.esprit.autoloc.repository.IReservationRepository;
 import tn.esprit.autoloc.service.interfaces.IContratService;
 import tn.esprit.autoloc.web.dto.ContratDto;
 import tn.esprit.autoloc.web.mapper.ContratMapper;
+import tn.esprit.autoloc.web.dto.affectation.ContratDTO;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +25,7 @@ import tn.esprit.autoloc.web.mapper.ContratMapper;
 public class ContratServiceImpl implements IContratService {
 
     private final IContratRepository contratRepository;
+    private final IReservationRepository reservationRepository;
     private final ContratMapper contratMapper;
 
     @Override
@@ -54,8 +63,57 @@ public class ContratServiceImpl implements IContratService {
         contratRepository.deleteById(id);
     }
 
+    @Override
+    @Transactional
+    public ContratDTO affecterContratAReservation(
+            LocalDate dateSignature,
+            LocalDate dateDebut,
+            LocalDate dateFin) {
+        if (dateSignature == null || dateDebut == null || dateFin == null) {
+            throw new IllegalArgumentException("Les dates de signature et de réservation sont obligatoires.");
+        }
+        if (dateFin.isBefore(dateDebut)) {
+            throw new IllegalArgumentException("La date de fin ne peut pas être antérieure à la date de début.");
+        }
+
+        List<Reservation> reservations = reservationRepository.findByDateDebutAndDateFin(dateDebut, dateFin);
+        if (reservations.isEmpty()) {
+            throw new ResourceNotFoundException(
+                    "Aucune réservation trouvée pour la période " + dateDebut + " au " + dateFin);
+        }
+        if (reservations.size() > 1) {
+            throw new ResourceConflictException(
+                    "Plusieurs réservations correspondent à cette période; l'affectation est ambiguë.");
+        }
+
+        Reservation reservation = reservations.get(0);
+        if (reservation.getContrat() != null) {
+            throw new ResourceConflictException("Cette réservation possède déjà un contrat.");
+        }
+
+        Contrat contrat = new Contrat();
+        contrat.setDateSignature(dateSignature);
+        long duree = Math.max(1, ChronoUnit.DAYS.between(dateDebut, dateFin));
+        contrat.setMontantTotal(reservation.getVehicule().getTarifJournalier()
+                .multiply(BigDecimal.valueOf(duree)));
+        contrat.setValide(false);
+        contratRepository.save(contrat);
+        reservation.setContrat(contrat);
+        reservationRepository.save(reservation);
+        return toContratDTO(contrat);
+    }
+
     private Contrat getEntityById(Long id) {
         return contratRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contrat", id));
+    }
+
+    private ContratDTO toContratDTO(Contrat contrat) {
+        ContratDto.Response response = contratMapper.toResponse(contrat);
+        return new ContratDTO(
+                response.idContrat(),
+                response.dateSignature(),
+                response.montantTotal(),
+                response.valide());
     }
 }
