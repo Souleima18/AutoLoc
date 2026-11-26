@@ -4,7 +4,13 @@ import java.time.LocalDate;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import tn.esprit.autoloc.domain.Reservation;
+import tn.esprit.autoloc.domain.StatutReservation;
 
 public interface IReservationRepository extends JpaRepository<Reservation, Long> {
     List<Reservation> findByDateDebutAndDateFin(LocalDate dateDebut, LocalDate dateFin);
+    List<Reservation> findByContratIsNotNullAndStatutAndDateFinBetween(
+            StatutReservation statut, LocalDate dateDebut, LocalDate dateFin);
+    List<Reservation> findByStatutAndDateFinBefore(StatutReservation statut, LocalDate dateFin);
+    boolean existsByVehicule_IdVehiculeAndStatutAndDateDebutLessThanEqualAndDateFinGreaterThanEqual(
+            Long vehiculeId, StatutReservation statut, LocalDate dateDebut, LocalDate dateFin);
 }
